@@ -1,14 +1,14 @@
-IRC ⟷  Skype Gateway Bot
-=========================
+Simple IRC ⟷  Skype Gateway Bot
+================================
 
 FEATURES
 --------
 
-* Mirror all messages from IRC channel to Skype chatroom and vice versa
+* Mirror messages from IRC channel to Skype chatroom and vice versa
 * Support regular messages and emotes (`/em`)
-* Provide bot commands from IRC side using direct messages to the bot
-  * Turn broadcasting to Skype `ON` or `OFF` for the user, get present `STATUS`
-  * Query for Skype users connected to channel using `INFO #channel`
+* Provide commands from IRC side using direct messages to the bot
+  * Turn broadcasting to Skype `ON` or `OFF` for the user, get user's present `STATUS`
+  * Query for Skype users mirrored to IRC channel using `INFO #channel`
 
 **This bot deliberately prefers IRC to Skype!**
 
