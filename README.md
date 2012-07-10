@@ -10,6 +10,8 @@ FEATURES
   * Turn broadcasting to Skype `ON` or `OFF` for the user, get present `STATUS`
   * Query for Skype users connected to channel using `INFO #channel`
 
+**This bot deliberately prefers IRC to Skype!**
+
 INSTALL
 -------
 
@@ -34,7 +36,7 @@ If you are using `python-irclib` 0.4.8 from Ubuntu 12.04 repositories, you have 
 
 If you use `python-irclib` 0.6.4 from [SourceForge][], you still have to do it.
 
-For python-skype I used the version 1.0.31.0 provided at `ppa:skype-wrapper/ppa`. Although newer version is packaged even for Ubuntu 11.04, this package didn't work out of the box on Ubuntu 12.04.
+For `python-skype` I used the version 1.0.31.0 provided at `ppa:skype-wrapper/ppa`. Although newer version is packaged even for Ubuntu 11.04, this package didn't work out of the box on Ubuntu 12.04.
 
 Skype has to be installed to use Skype API, which is used to communicate with Skype.
 
