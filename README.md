@@ -17,30 +17,7 @@ INSTALL
 
 On Ubuntu/Debian you need `python-irclib` and `python-skype` as well as Skype itself to run the script.
 
-If you are using `python-irclib` 0.4.8 from Ubuntu 12.04 repositories, you have to patch `/usr/share/pyshared/irclib.py` like that:
-
-    --- irclib_old.py	2012-07-10 20:44:10.341948937 +0300
-    +++ irclib_new.py	2012-07-10 20:51:48.989934682 +0300
-    @@ -785,9 +785,9 @@
-                 raise ServerNotConnectedError, "Not connected."
-             try:
-                 if self.ssl:
-    -                self.ssl.write(string + "\r\n")
-    +                self.ssl.write(string.encode('utf-8') + "\r\n")
-                 else:
-    -                self.socket.send(string + "\r\n")
-    +                self.socket.send(string.encode('utf-8') + "\r\n")
-                 if DEBUG:
-                     print "TO SERVER:", string
-             except socket.error, x:
-
-If you use `python-irclib` 0.6.4 from [SourceForge][], you still have to do it.
-
 For `python-skype` I used the version 1.0.31.0 provided at `ppa:skype-wrapper/ppa`. Although newer version is packaged even for Ubuntu 11.04, this package didn't work out of the box on Ubuntu 12.04.
-
-Skype has to be installed to use Skype API, which is used to communicate with Skype.
-
-[SourceForge]: http://sourceforge.net/projects/python-irclib/
 
 CONFIGURE
 ---------

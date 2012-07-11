@@ -177,7 +177,7 @@ class MirrorBot (ircbot.SingleServerIRCBot):
     def say(self, target, msg, do_say = True):
         """Send messages to channels/nicks"""
         print target, msg
-        lines = msg.split("\n")
+        lines = msg.encode("UTF-8").split("\n")
         cur = 0
         for line in lines:
             if do_say:
@@ -328,6 +328,6 @@ topics = topics.rstrip("|") + "]"
 
 load_mutes()
 
-bot = MirrorBot ([( server, port )], nick, botname + " " + topics)
+bot = MirrorBot ([( server, port )], nick, (botname + " " + topics).encode("UTF-8"))
 print "Starting IRC bot..."
 bot.start()
