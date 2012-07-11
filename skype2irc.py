@@ -37,6 +37,7 @@ port = 6667
 nick = "skype-}"
 botname = "IRC ⟷  Skype".decode('utf-8', 'ignore')
 password = None
+preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
 
 mirrors = {
 '#test':
@@ -151,6 +152,25 @@ def OnMessageStatus(Message, Status):
             elif msgtype == 'SAID':
                 bot.say(usemap[chat], '<' + senderHandle + '> ' + raw)
 
+def decode_irc(raw, preferred_encs = preferred_encodings):
+    """Heuristic IRC charset decoder"""
+    changed = False
+    for enc in preferred_encs:
+        try:
+            res = raw.decode(enc)
+            changed = True
+            break
+        except:
+            pass
+    if not changed:
+        try:
+            enc = chardet.detect(raw)['encoding']
+            res = raw.decode(enc)
+        except:
+            res = raw.decode(enc, 'ignore')
+            #enc += "+IGNORE"
+    return res
+    
 class MirrorBot (ircbot.SingleServerIRCBot):
     """Create IRC bot class"""
     
@@ -186,10 +206,12 @@ class MirrorBot (ircbot.SingleServerIRCBot):
         source = event.source().split('!')[0]
         if source in mutedl:
             return
+        msg = "<" + source + "> "
         target = event.target()
-        raw = event.arguments()[0].decode('utf-8', 'ignore')
-        msg = "<" + source + "> " + raw
+        for raw in event.arguments():
+            msg += decode_irc(raw) + "\n"
         # A regular message has been sent to us
+        msg = msg.rstrip("\n")
         print cut_title(usemap[target].FriendlyName), msg
         usemap[target].SendMessage(msg)
 
