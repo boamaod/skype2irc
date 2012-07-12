@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Initiating IRC ⟷  Skype Gateway Bot"
+echo "Initiating..."
 
 while :
 do

@@ -28,7 +28,7 @@
 import sys
 import ircbot
 import time, datetime
-import string
+import string, textwrap
 
 version = "0.0.1"
 
@@ -37,6 +37,8 @@ port = 6667
 nick = "skype-}"
 botname = "IRC ⟷  Skype".decode('utf-8', 'ignore')
 password = None
+
+max_irc_msg_len = 450
 preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
 
 mirrors = {
@@ -102,14 +104,14 @@ def get_relative_time(dt):
           return str(years) + " years ago"
 
 def cut_title(title):
-    """Cuts chat title to be ok"""
+    """Cuts Skype chat title to be ok"""
     newtitle = ""
     for chunk in title.split():
         newtitle += chunk.strip(string.punctuation) + " "
         if len(newtitle) > 10:
             break
     return newtitle.strip()
-    
+
 def load_mutes():
     """Loads people who don't want to be broadcasted from IRC to Skype"""
     try:
@@ -170,23 +172,25 @@ def decode_irc(raw, preferred_encs = preferred_encodings):
             res = raw.decode(enc, 'ignore')
             #enc += "+IGNORE"
     return res
-    
+
 class MirrorBot (ircbot.SingleServerIRCBot):
     """Create IRC bot class"""
     
     def say(self, target, msg, do_say = True):
         """Send messages to channels/nicks"""
-        print target, msg
         lines = msg.encode("UTF-8").split("\n")
         cur = 0
         for line in lines:
-            if do_say:
-                self.connection.privmsg(target, line)
-            else:
-                self.connection.notice(target, line)
-            cur += 1
-            if cur % 4 == 0:
-                time.sleep(3) # to avoid flood excess
+            for irc_msg in textwrap.wrap(line.strip("\r"), max_irc_msg_len - 2):
+                print target, irc_msg
+                irc_msg += "\r\n"
+                if do_say:
+                    self.connection.privmsg(target, irc_msg)
+                else:
+                    self.connection.notice(target, irc_msg)
+                cur += 1
+                if cur % 4 == 0:
+                    time.sleep(3) # to avoid flood excess
 
     def notice(self, target, msg):
         """Send notices to channels/nicks"""
@@ -216,15 +220,15 @@ class MirrorBot (ircbot.SingleServerIRCBot):
         usemap[target].SendMessage(msg)
 
     def handle_ctcp(self, connection, event):
-        """Handle ctcp events for emoting"""
+        """Handle CTCP events for emoting"""
         source = event.source().split('!')[0]
         if source in mutedl:
             return
         target = event.target()
-        raw = event.arguments()[0].decode('utf-8', 'ignore')
-        msg = "* " + source + " " + raw
-        # An emote/action message has been sent to us
-        if (event.arguments()[0]=='ACTION'):
+        args = event.arguments()
+        if args[0]=='ACTION' and len(args) == 2:
+            # An emote/action message has been sent to us
+            msg = "* " + source + " " + decode_irc(args[1]) + "\n"
             print cut_title(usemap[target].FriendlyName), msg
             usemap[target].SendMessage(msg)
 
@@ -285,7 +289,8 @@ class MirrorBot (ircbot.SingleServerIRCBot):
             bot.say(source, botname + " " + version + " " + topics + ":\n * ON/OFF/STATUS --- Trigger broadcasting to Skype\n * INFO #channel --- Display list of users from relevant Skype chat")
 
 # *** Start everything up! ***
-    
+
+print "Running", botname, "Gateway Bot", version
 try:
     import Skype4Py
 except:
