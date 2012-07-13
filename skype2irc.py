@@ -38,7 +38,7 @@ nick = "skype-}"
 botname = "IRC ⟷  Skype".decode('utf-8', 'ignore')
 password = None
 
-max_irc_msg_len = 450
+max_irc_msg_len = 447
 preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
 
 mirrors = {
