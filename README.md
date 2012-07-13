@@ -9,6 +9,7 @@ FEATURES
 * Provide commands from IRC side using direct messages to the bot
   * Turn broadcasting to Skype `ON` or `OFF` for the user, get user's present `STATUS`
   * Query for Skype users mirrored to IRC channel using `INFO #channel`
+* Quick and transparent Skype broadcasting `ON` and `OFF` during chat by adressing the bot in channel openly with a string for desired state
 
 **This bot deliberately prefers IRC to Skype!**
 
@@ -22,9 +23,9 @@ For `python-skype` I used the version 1.0.31.0 provided at `ppa:skype-wrapper/pp
 CONFIGURE
 ---------
 
-You can configure the IRC servers and Skype chatrooms to mirror in the header of `skype2irc.py`. You are able to define one IRC server and as many pairs of IRC channel and Skype chatroom as you like. Skype chatrooms are defined by the blob, which you can obtain writing `/get uri` in a chatroom.
+You can configure the IRC servers and Skype chatrooms to mirror in the header of `skype2irc.py`. You may define one IRC server and as many pairs of IRC channels and Skype chatrooms as you like. Skype chatrooms are defined by the blob, which you can obtain writing `/get uri` in a chatroom.
 
-You may need to join your Skype chatroom to be mirrored before actually starting the gateway, because it seems that Skype API isn't always able to successfully join the chatroom using a blob provided. Make sure you have an access to chatroom using GUI before starting to hassle with the code.
+You may need to join your Skype chatroom to be mirrored before actually starting the gateway, because it seems that Skype API isn't always able to successfully join the chatroom using a blob provided (I usually get a timeout error). So make sure you have an access to chatroom using GUI before starting to hassle with the code.
 
 The default values provided in the header of `skype2irc.py` should be enough to give the program a test run.
 

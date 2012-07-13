@@ -30,12 +30,12 @@ import ircbot
 import time, datetime
 import string, textwrap
 
-version = "0.0.1"
+version = "0.2"
 
 server = "irc.freenode.net"
 port = 6667
 nick = "skype-}"
-botname = "IRC ⟷  Skype".decode('utf-8', 'ignore')
+botname = "IRC ⟷  Skype".decode('UTF-8')
 password = None
 
 max_irc_msg_len = 447
@@ -46,13 +46,17 @@ mirrors = {
 'X0_uprrk9XD40sCzSx_QtLT-oELEiV63Jw402jjG0dUaHiq2CD-F-6gKEQiFrgF_YPiUBcH-d6JcgmyWRPnteETG',
 }
 
+name_start = "◀".decode('UTF-8') # "<"
+name_end = "▶".decode('UTF-8') # ">"
+emote_char = "✱".decode('UTF-8') # "*"
+
 topics = ""
 
-muted_list_filename = server + '.muted'
+muted_list_filename = server + '.%s.muted'
 
 usemap = {}
 bot = None
-mutedl = []
+mutedl = {}
 
 # Time consts
 SECOND = 1
@@ -114,26 +118,28 @@ def cut_title(title):
 
 def load_mutes():
     """Loads people who don't want to be broadcasted from IRC to Skype"""
-    try:
-        f = open(muted_list_filename, 'r')
-        for line in f.readlines():
-            name = line.replace('\n', '');
-            mutedl.append(name)
-            mutedl.sort()
-        f.close()
-        print 'Added list of ' + str(len(mutedl)) + ' mutes!'
-    except:
-        pass
+    for channel in mirrors.keys():
+        mutedl[channel] = []
+        try:
+            f = open(muted_list_filename % channel, 'r')
+            for line in f.readlines():
+                name = line.rstrip("\n")
+                mutedl[channel].append(name)
+                mutedl[channel].sort()
+            f.close()
+            print 'Loaded list of ' + str(len(mutedl[channel])) + ' mutes for ' + channel + '!'
+        except:
+            pass
 
-def save_mutes():
+def save_mutes(channel):
     """Saves people who don't want to be broadcasted from IRC to Skype"""
     try:
-        f = open(muted_list_filename, 'w')
-        for name in mutedl:
+        f = open(muted_list_filename % channel, 'w')
+        for name in mutedl[channel]:
             f.write(name + '\n')
-        mutedl.sort()
+        mutedl[channel].sort()
         f.close
-        print 'Saved ' + str(len(mutedl)) + ' mutes!'
+        print 'Saved ' + str(len(mutedl[channel])) + ' mutes for ' + channel + '!'
     except:
         pass
 
@@ -150,9 +156,9 @@ def OnMessageStatus(Message, Status):
     if chat in usemap:
         if Status == 'RECEIVED':
             if msgtype == 'EMOTED':
-                bot.say(usemap[chat], '* ' + senderHandle + ' ' + raw)
+                bot.say(usemap[chat], emote_char + " " + senderHandle + " " + raw)
             elif msgtype == 'SAID':
-                bot.say(usemap[chat], '<' + senderHandle + '> ' + raw)
+                bot.say(usemap[chat], name_start + senderHandle + name_end + " " + raw)
 
 def decode_irc(raw, preferred_encs = preferred_encodings):
     """Heuristic IRC charset decoder"""
@@ -207,12 +213,23 @@ class MirrorBot (ircbot.SingleServerIRCBot):
 
     def on_pubmsg(self, connection, event):
         """React to channel messages"""
+        args = event.arguments()
         source = event.source().split('!')[0]
-        if source in mutedl:
-            return
-        msg = "<" + source + "> "
         target = event.target()
-        for raw in event.arguments():
+        cmds = args[0].split()
+        if cmds[0].rstrip(":,") == nick:
+            if len(cmds)==2:
+                if cmds[1].upper() == 'ON' and source in mutedl[target]:
+                    mutedl[target].remove(source)
+                    save_mutes(target)
+                elif cmds[1].upper() == 'OFF' and source not in mutedl[target]:
+                    mutedl[target].append(source)
+                    save_mutes(target)
+            return
+        if source in mutedl[target]:
+            return
+        msg = name_start + source + name_end + " "
+        for raw in args:
             msg += decode_irc(raw) + "\n"
         # A regular message has been sent to us
         msg = msg.rstrip("\n")
@@ -221,14 +238,14 @@ class MirrorBot (ircbot.SingleServerIRCBot):
 
     def handle_ctcp(self, connection, event):
         """Handle CTCP events for emoting"""
-        source = event.source().split('!')[0]
-        if source in mutedl:
-            return
-        target = event.target()
         args = event.arguments()
+        source = event.source().split('!')[0]
+        target = event.target()
+        if source in mutedl[target]:
+            return
         if args[0]=='ACTION' and len(args) == 2:
             # An emote/action message has been sent to us
-            msg = "* " + source + " " + decode_irc(args[1]) + "\n"
+            msg = emote_char + " " + source + " " + decode_irc(args[1]) + "\n"
             print cut_title(usemap[target].FriendlyName), msg
             usemap[target].SendMessage(msg)
 
@@ -240,28 +257,37 @@ class MirrorBot (ircbot.SingleServerIRCBot):
         two = args[0][:2].upper()
         
         if two == 'ST': # STATUS
-            if source in mutedl:
-                bot.say(source, "You're muted")
-            else:
-                bot.say(source, "You're broadcasted")
+            muteds = []
+            brdcsts = []
+            for channel in mirrors.keys():
+                if source in mutedl[channel]:
+                    muteds.append(channel)
+                else:
+                    brdcsts.append(channel)
+            if len(brdcsts) > 0:
+                bot.say(source, "You're broadcasted in " + ", ".join(brdcsts))
+            if len(muteds) > 0:
+                bot.say(source, "You're muted in " + ", ".join(muteds))
                 
         if two == 'OF': # OFF
-            if source not in mutedl:
-                mutedl.append(source)
-                save_mutes()
-                bot.say(source, "You're muted now")
+            for channel in mirrors.keys():
+                if source not in mutedl[channel]:
+                    mutedl[channel].append(source)
+                    save_mutes(channel)
+            bot.say(source, "You're muted now")
                 
         elif two == 'ON': # ON
-            if source in mutedl:
-                mutedl.remove(source)
-                save_mutes()
-                bot.say(source, "You're broadcasted now")
+            for channel in mirrors.keys():
+                if source in mutedl[channel]:
+                    mutedl[channel].remove(source)
+                    save_mutes(channel)
+            bot.say(source, "You're broadcasted now")
                 
         elif two == 'IN' and len(args) > 1 and args[1] in mirrors: # INFO
             chat = usemap[args[1]]
             members = chat.Members
             active = chat.ActiveMembers
-            msg = args[1] + " ⟷  \"".decode('utf-8', 'ignore') + chat.FriendlyName + "\" (%d/%d)\n" % (len(active), len(members))
+            msg = args[1] + " ⟷  \"".decode("UTF-8") + chat.FriendlyName + "\" (%d/%d)\n" % (len(active), len(members))
             # msg += chat.Blob + "\n"
             userList = []
             for user in members:
@@ -282,7 +308,7 @@ class MirrorBot (ircbot.SingleServerIRCBot):
                 userList.sort()
             for desc in userList:
                  msg += desc + '\n'
-            msg = msg[0:len(msg)-1] # remove '\n'
+            msg = msg.rstrip("\n")
             bot.say(source, msg)
             
         elif two in ('/', '?', 'HE'): # HELP
