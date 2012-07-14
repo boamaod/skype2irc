@@ -265,23 +265,23 @@ class MirrorBot (ircbot.SingleServerIRCBot):
                 else:
                     brdcsts.append(channel)
             if len(brdcsts) > 0:
-                bot.say(source, "You're broadcasted in " + ", ".join(brdcsts))
+                bot.say(source, "You're mirrored to Skype from " + ", ".join(brdcsts))
             if len(muteds) > 0:
-                bot.say(source, "You're muted in " + ", ".join(muteds))
+                bot.say(source, "You're silent to Skype on " + ", ".join(muteds))
                 
         if two == 'OF': # OFF
             for channel in mirrors.keys():
                 if source not in mutedl[channel]:
                     mutedl[channel].append(source)
                     save_mutes(channel)
-            bot.say(source, "You're muted now")
+            bot.say(source, "You're silent to Skype now")
                 
         elif two == 'ON': # ON
             for channel in mirrors.keys():
                 if source in mutedl[channel]:
                     mutedl[channel].remove(source)
                     save_mutes(channel)
-            bot.say(source, "You're broadcasted now")
+            bot.say(source, "You're mirrored to Skype now")
                 
         elif two == 'IN' and len(args) > 1 and args[1] in mirrors: # INFO
             chat = usemap[args[1]]
@@ -311,8 +311,8 @@ class MirrorBot (ircbot.SingleServerIRCBot):
             msg = msg.rstrip("\n")
             bot.say(source, msg)
             
-        elif two in ('/', '?', 'HE'): # HELP
-            bot.say(source, botname + " " + version + " " + topics + ":\n * ON/OFF/STATUS --- Trigger broadcasting to Skype\n * INFO #channel --- Display list of users from relevant Skype chat")
+        elif two in ('?', 'HE', 'HI', 'WT'): # HELP
+            bot.say(source, botname + " " + version + " " + topics + "\n * ON/OFF/STATUS --- Trigger mirroring to Skype\n * INFO #channel --- Display list of users from relevant Skype chat\nDetails: https://github.com/boamaod/skype2irc#readme")
 
 # *** Start everything up! ***
 
