@@ -202,7 +202,7 @@ class MirrorBot(SingleServerIRCBot):
             if not self.connection.is_connected():
                 time.sleep(self.reconnection_interval)
                 self.server_list.append(self.server_list.pop(0))
-        super(SingleServerIRCBot, self).start()
+        SingleServerIRCBot.start(self)
 
     def routine_ping(self, first_run = False):
         """Ping server to know when try to reconnect to a new server."""
