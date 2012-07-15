@@ -26,33 +26,43 @@
 #  Time until a date http://stackoverflow.com/questions/1580227/find-time-until-a-date-in-python
 
 import sys
-import ircbot
 import time, datetime
 import string, textwrap
 
+from ircbot import SingleServerIRCBot
+from threading import Timer
+
 version = "0.2"
 
-server = "irc.freenode.net"
-port = 6667
+servers = [
+("roddenberry.freenode.net", 6667),
+("hitchcock.freenode.net", 6667),
+("leguin.freenode.net", 6667),
+("verne.freenode.net", 6667),
+]
+
 nick = "skype-}"
 botname = "IRC ⟷  Skype".decode('UTF-8')
 password = None
-
-max_irc_msg_len = 447
-preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
 
 mirrors = {
 '#test':
 'X0_uprrk9XD40sCzSx_QtLT-oELEiV63Jw402jjG0dUaHiq2CD-F-6gKEQiFrgF_YPiUBcH-d6JcgmyWRPnteETG',
 }
 
+max_irc_msg_len = 447
+ping_interval = 2*60
+reconnect_interval = 30
+
+preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
+
 name_start = "◀".decode('UTF-8') # "<"
 name_end = "▶".decode('UTF-8') # ">"
 emote_char = "✱".decode('UTF-8') # "*"
 
-topics = ""
+muted_list_filename = nick + '.%s.muted'
 
-muted_list_filename = server + '.%s.muted'
+topics = ""
 
 usemap = {}
 bot = None
@@ -179,9 +189,36 @@ def decode_irc(raw, preferred_encs = preferred_encodings):
             #enc += "+IGNORE"
     return res
 
-class MirrorBot (ircbot.SingleServerIRCBot):
+class MirrorBot(SingleServerIRCBot):
     """Create IRC bot class"""
-    
+
+    def __init__(self):
+        SingleServerIRCBot.__init__(self, servers, nick, (botname + " " + topics).encode("UTF-8"), reconnect_interval)
+
+    def start(self):
+        """Override default start function to avoid starting/stalling the bot with no connection"""
+        while not self.connection.is_connected():
+            self._connect()
+            if not self.connection.is_connected():
+                time.sleep(self.reconnection_interval)
+                self.server_list.append(self.server_list.pop(0))
+        super(SingleServerIRCBot, self).start()
+
+    def routine_ping(self, first_run = False):
+        """Ping server to know when try to reconnect to a new server."""
+        if not first_run and not self.pong_received:
+            print "Ping reply timeout, disconnecting from", self.connection.get_server_name()
+            self.disconnect()
+            return
+        self.pong_received = False
+        self.connection.ping(self.connection.get_server_name())
+        pinger = Timer(ping_interval, self.routine_ping, ())
+        pinger.start()
+
+    def on_pong(self, connection, event):
+        """React to pong"""
+        self.pong_received = True
+
     def say(self, target, msg, do_say = True):
         """Send messages to channels/nicks"""
         lines = msg.encode("UTF-8").split("\n")
@@ -204,12 +241,14 @@ class MirrorBot (ircbot.SingleServerIRCBot):
 
     def on_welcome(self, connection, event):
         """Do stuff when when welcomed to server"""
+        print "Connected to", self.connection.get_server_name()
         if password is not None:
             bot.say("NickServ", "identify " + password)
         self.connection.add_global_handler("ctcp", self.handle_ctcp)
         for pair in mirrors:
             connection.join(pair)
             print "Joined " + pair
+        self.routine_ping(first_run = True)
 
     def on_pubmsg(self, connection, event):
         """React to channel messages"""
@@ -359,6 +398,6 @@ topics = topics.rstrip("|") + "]"
 
 load_mutes()
 
-bot = MirrorBot ([( server, port )], nick, (botname + " " + topics).encode("UTF-8"))
+bot = MirrorBot()
 print "Starting IRC bot..."
 bot.start()
