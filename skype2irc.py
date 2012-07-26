@@ -25,20 +25,22 @@
 #  IRC on a Higher Level http://www.devshed.com/c/a/Python/IRC-on-a-Higher-Level/
 #  Time until a date http://stackoverflow.com/questions/1580227/find-time-until-a-date-in-python
 
-import sys
+import sys, signal
 import time, datetime
 import string, textwrap
 
 from ircbot import SingleServerIRCBot
+from irclib import ServerNotConnectedError
 from threading import Timer
 
 version = "0.2"
 
 servers = [
-("roddenberry.freenode.net", 6667),
+("irc.freenode.net", 6667),
 ("hitchcock.freenode.net", 6667),
 ("leguin.freenode.net", 6667),
 ("verne.freenode.net", 6667),
+("roddenberry.freenode.net", 6667),
 ]
 
 nick = "skype-}"
@@ -46,13 +48,18 @@ botname = "IRC ⟷  Skype".decode('UTF-8')
 password = None
 
 mirrors = {
-'#test':
+'#floodtest':
 'X0_uprrk9XD40sCzSx_QtLT-oELEiV63Jw402jjG0dUaHiq2CD-F-6gKEQiFrgF_YPiUBcH-d6JcgmyWRPnteETG',
 }
 
-max_irc_msg_len = 447
+max_irc_msg_len = 442
 ping_interval = 2*60
 reconnect_interval = 30
+
+# to avoid flood excess
+max_seq_msgs = 2
+delay_btw_msgs = 0.25
+delay_btw_seqs = 0.15
 
 preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
 
@@ -67,6 +74,13 @@ topics = ""
 usemap = {}
 bot = None
 mutedl = {}
+lastsaid = {}
+
+pinger = None
+bot = None
+
+wrapper = textwrap.TextWrapper(width=max_irc_msg_len - 2)
+wrapper.break_on_hyphens = False
 
 # Time consts
 SECOND = 1
@@ -182,12 +196,26 @@ def decode_irc(raw, preferred_encs = preferred_encodings):
             pass
     if not changed:
         try:
+            import chardet
             enc = chardet.detect(raw)['encoding']
             res = raw.decode(enc)
         except:
             res = raw.decode(enc, 'ignore')
             #enc += "+IGNORE"
     return res
+
+def signal_handler(signal, frame):
+    print "Ctrl+C pressed!"
+    if pinger is not None:
+        print "Cancelling the pinger..."
+        pinger.cancel()
+    if bot is not None:
+        print "Killing the bot..."
+        for dh in bot.ircobj.handlers["disconnect"]:
+            bot.ircobj.remove_global_handler("disconnect", dh[1])
+        if len(bot.ircobj.handlers["disconnect"]) == 0:
+            print "Finished."
+            bot.die()
 
 class MirrorBot(SingleServerIRCBot):
     """Create IRC bot class"""
@@ -206,6 +234,7 @@ class MirrorBot(SingleServerIRCBot):
 
     def routine_ping(self, first_run = False):
         """Ping server to know when try to reconnect to a new server."""
+        global pinger
         if not first_run and not self.pong_received:
             print "Ping reply timeout, disconnecting from", self.connection.get_server_name()
             self.disconnect()
@@ -221,20 +250,28 @@ class MirrorBot(SingleServerIRCBot):
 
     def say(self, target, msg, do_say = True):
         """Send messages to channels/nicks"""
-        lines = msg.encode("UTF-8").split("\n")
-        cur = 0
-        for line in lines:
-            for irc_msg in textwrap.wrap(line.strip("\r"), max_irc_msg_len - 2):
-                print target, irc_msg
-                irc_msg += "\r\n"
-                if do_say:
-                    self.connection.privmsg(target, irc_msg)
-                else:
-                    self.connection.notice(target, irc_msg)
-                cur += 1
-                if cur % 4 == 0:
-                    time.sleep(3) # to avoid flood excess
-
+        try:
+            lines = msg.encode("UTF-8").split("\n")
+            cur = 0
+            for line in lines:
+                for irc_msg in wrapper.wrap(line.strip("\r")):
+                    print target, irc_msg
+                    irc_msg += "\r\n"
+                    if target not in lastsaid.keys():
+                        lastsaid[target] = 0
+                    while time.time()-lastsaid[target] < delay_btw_msgs:
+                        time.sleep(0.2)
+                    lastsaid[target]=time.time()
+                    if do_say:
+                        self.connection.privmsg(target, irc_msg)
+                    else:
+                        self.connection.notice(target, irc_msg)
+                    cur += 1
+                    if cur % max_seq_msgs == 0:
+                        time.sleep(delay_btw_seqs) # to avoid flood excess
+        except ServerNotConnectedError:
+            print "{" +target + " " + msg+"} SKIPPED!"
+			
     def notice(self, target, msg):
         """Send notices to channels/nicks"""
         self.say(self, target, msg, False)
@@ -270,7 +307,6 @@ class MirrorBot(SingleServerIRCBot):
         msg = name_start + source + name_end + " "
         for raw in args:
             msg += decode_irc(raw) + "\n"
-        # A regular message has been sent to us
         msg = msg.rstrip("\n")
         print cut_title(usemap[target].FriendlyName), msg
         usemap[target].SendMessage(msg)
@@ -354,6 +390,8 @@ class MirrorBot(SingleServerIRCBot):
             bot.say(source, botname + " " + version + " " + topics + "\n * ON/OFF/STATUS --- Trigger mirroring to Skype\n * INFO #channel --- Display list of users from relevant Skype chat\nDetails: https://github.com/boamaod/skype2irc#readme")
 
 # *** Start everything up! ***
+
+signal.signal(signal.SIGINT, signal_handler)
 
 print "Running", botname, "Gateway Bot", version
 try:
