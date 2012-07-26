@@ -48,7 +48,7 @@ botname = "IRC ⟷  Skype".decode('UTF-8')
 password = None
 
 mirrors = {
-'#floodtest':
+'#test':
 'X0_uprrk9XD40sCzSx_QtLT-oELEiV63Jw402jjG0dUaHiq2CD-F-6gKEQiFrgF_YPiUBcH-d6JcgmyWRPnteETG',
 }
 
