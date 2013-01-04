@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # IRC ⟷  Skype Gateway Bot: Connects Skype Chats to IRC Channels
-# Copyright (C) 2012  Guido Tabbernuk <boamaod@gmail.com>
+# Copyright (C) 2013  Märt Põder <mart.poder@p6drad-teel.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ reconnect_interval = 30
 
 # to avoid flood excess
 max_seq_msgs = 2
-delay_btw_msgs = 0.25
+delay_btw_msgs = 0.35
 delay_btw_seqs = 0.15
 
 preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
@@ -316,8 +316,9 @@ class MirrorBot(SingleServerIRCBot):
         args = event.arguments()
         source = event.source().split('!')[0]
         target = event.target()
-        if source in mutedl[target]:
-            return
+        if target in mirrors.keys():
+            if source in mutedl[target]:
+                return
         if args[0]=='ACTION' and len(args) == 2:
             # An emote/action message has been sent to us
             msg = emote_char + " " + source + " " + decode_irc(args[1]) + "\n"
