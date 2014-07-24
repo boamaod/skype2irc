@@ -140,6 +140,10 @@ def cut_title(title):
             break
     return newtitle.strip()
 
+def get_nick_decorated(nick):
+    """Decorate nicks for better visibility in IRC (currently bold)"""
+    return "\x02" + nick + "\x02"
+
 def load_mutes():
     """Loads people who don't want to be broadcasted from IRC to Skype"""
     for channel in mirrors.keys():
@@ -180,9 +184,10 @@ def OnMessageStatus(Message, Status):
     if chat in usemap:
         if Status == 'RECEIVED':
             if msgtype == 'EMOTED':
-                bot.say(usemap[chat], emote_char + " " + senderHandle + " " + raw)
+                bot.say(usemap[chat], emote_char + " " + get_nick_decorated(senderHandle) + " " + raw)
             elif msgtype == 'SAID':
-                bot.say(usemap[chat], name_start + senderHandle + name_end + " " + raw)
+                bot.say(usemap[chat], name_start + get_nick_decorated(senderHandle) + name_end + " " + raw)
+
 
 def decode_irc(raw, preferred_encs = preferred_encodings):
     """Heuristic IRC charset decoder"""
