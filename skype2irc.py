@@ -302,6 +302,8 @@ class MirrorBot(SingleServerIRCBot):
         print "Connected to", self.connection.get_server_name()
         if password is not None:
             bot.say("NickServ", "identify " + password)
+        # ensure handler is present exactly once by removing it before adding
+        self.connection.remove_global_handler("ctcp", self.handle_ctcp)            
         self.connection.add_global_handler("ctcp", self.handle_ctcp)
         for pair in mirrors:
             connection.join(pair)
