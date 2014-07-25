@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # IRC ⟷  Skype Gateway Bot: Connects Skype Chats to IRC Channels
-# Copyright (C) 2013  Märt Põder <mart.poder@p6drad-teel.net>
+# Copyright (C) 2014  Märt Põder <tramm@p6drad-teel.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #  Feebas Skype Bot (C) duxlol 2011 http://sourceforge.net/projects/feebas/
 #  IRC on a Higher Level http://www.devshed.com/c/a/Python/IRC-on-a-Higher-Level/
 #  Time until a date http://stackoverflow.com/questions/1580227/find-time-until-a-date-in-python
+#  Skype message edit code from Kiantis fork https://github.com/Kiantis/skype2irc
 
 import sys, signal
 import time, datetime
@@ -33,7 +34,7 @@ from ircbot import SingleServerIRCBot
 from irclib import ServerNotConnectedError
 from threading import Timer
 
-version = "0.2"
+version = "0.3"
 
 servers = [
 ("irc.freenode.net", 6667),
@@ -49,7 +50,7 @@ password = None
 
 mirrors = {
 '#test':
-'X0_uprrk9XD40sCzSx_QtLT-oELEiV63Jw402jjG0dUaHiq2CD-F-6gKEQiFrgF_YPiUBcH-d6JcgmyWRPnteETG',
+'iWwCuTwsjoIglPL3Fbmc_BM95EyK3683btIvrV_B2lQN4agJGCX7-REKzMl7-ruRqvo2RIgcOkQ',
 }
 
 max_irc_msg_len = 442
@@ -63,9 +64,9 @@ delay_btw_seqs = 0.15
 
 preferred_encodings = ["UTF-8", "CP1252", "ISO-8859-1"]
 
-name_start = "◀".decode('UTF-8') # "<"
-name_end = "▶".decode('UTF-8') # ">"
-emote_char = "✱".decode('UTF-8') # "*"
+name_start = "<".decode('UTF-8') # "◀"
+name_end = ">".decode('UTF-8') # "▶"
+emote_char = "*".decode('UTF-8') # "✱"
 
 muted_list_filename = nick + '.%s.muted'
 
@@ -75,6 +76,7 @@ usemap = {}
 bot = None
 mutedl = {}
 lastsaid = {}
+edmsgs = {}
 
 pinger = None
 bot = None
@@ -89,7 +91,7 @@ HOUR = 60 * MINUTE
 DAY = 24 * HOUR
 MONTH = 30 * DAY
 
-def get_relative_time(dt):
+def get_relative_time(dt, display_full = True):
     """Returns relative time compared to now from timestamp"""
     now = datetime.datetime.now()
     delta_time = now - dt
@@ -100,36 +102,36 @@ def get_relative_time(dt):
     days = delta / DAY
 
     if delta <= 0:
-        return "in the future"
+        return "in the future" if display_full else "!"
     if delta < 1 * MINUTE: 
       if delta == 1:
-          return  "moment ago"
+          return "moment ago" if display_full else "1s"
       else:
-          return str(delta) + " seconds ago"
+          return str(delta) + (" seconds ago" if display_full else "s")
     if delta < 2 * MINUTE:    
-        return "a minute ago"
+        return "a minute ago" if display_full else "1m"
     if delta < 45 * MINUTE:    
-        return str(minutes) + " minutes ago"
-    if delta < 90 * MINUTE:    
-        return "an hour ago"
+        return str(minutes) + (" minutes ago" if display_full else "m")
+    if delta < 90 * MINUTE:
+        return "an hour ago" if display_full else "1h"
     if delta < 24 * HOUR:
-        return str(hours) + " hours ago"
-    if delta < 48 * HOUR:    
-        return "yesterday"
+        return str(hours) + (" hours ago" if display_full else "h")
+    if delta < 48 * HOUR:
+        return "yesterday" if display_full else "1d"
     if delta < 30 * DAY:    
-        return str(days) + " days ago"
-    if delta < 12 * MONTH:    
+        return str(days) + (" days ago" if display_full else "d")
+    if delta < 12 * MONTH:
         months = delta / MONTH
         if months <= 1:
-            return "one month ago"
+            return "one month ago" if display_full else "1m"
         else:
-            return str(months) + " months ago"
-    else:    
+            return str(months) + (" months ago" if display_full else "m")
+    else:
       years = days / 365.0
       if  years <= 1:
-          return "one year ago"
+          return "one year ago" if display_full else "1y"
       else:
-          return str(years) + " years ago"
+          return str(years) + (" years ago" if display_full else "y")
 
 def cut_title(title):
     """Cuts Skype chat title to be ok"""
@@ -172,7 +174,7 @@ def save_mutes(channel):
         pass
 
 def OnMessageStatus(Message, Status):
-    """Create Skype object listener"""
+    """Skype message object listener"""
     raw = Message.Body
     msgtype = Message.Type
     chat = Message.Chat
@@ -188,6 +190,20 @@ def OnMessageStatus(Message, Status):
             elif msgtype == 'SAID':
                 bot.say(usemap[chat], name_start + get_nick_decorated(senderHandle) + name_end + " " + raw)
 
+def OnNotify(n):
+    """Skype notification listener"""
+    params = n.split()
+    if len(params) >= 4 and params[0] == "CHATMESSAGE":
+        print params, edmsgs
+        if params[2] == "EDITED_TIMESTAMP":
+            edmsgs[params[1]] = True
+        elif params[1] in edmsgs and params[2] == "BODY":
+            msg = skype.Message(params[1])
+            if msg:
+                chat = msg.Chat
+                if chat in usemap:
+                    bot.say(usemap[chat], name_start + get_nick_decorated(msg.FromHandle) + " ✎".decode('UTF-8') + get_relative_time(msg.Datetime, display_full = False) + name_end + " " + msg.Body)
+            del edmsgs[params[1]]
 
 def decode_irc(raw, preferred_encs = preferred_encodings):
     """Heuristic IRC charset decoder"""
@@ -424,6 +440,7 @@ elif not skype.Client.IsRunning:
 try:
     skype.Attach();
     skype.OnMessageStatus = OnMessageStatus
+    skype.OnNotify = OnNotify
 except:
     print 'Failed to connect! You have to log in to your Skype instance and enable access to Skype for Skype4Py! Quitting...'
     sys.exit()
