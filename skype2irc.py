@@ -47,6 +47,7 @@ servers = [
 nick = "skype-}"
 botname = "IRC ⟷  Skype".decode('UTF-8')
 password = None
+vhost = False
 
 mirrors = {
 '#test':
@@ -302,6 +303,8 @@ class MirrorBot(SingleServerIRCBot):
         print "Connected to", self.connection.get_server_name()
         if password is not None:
             bot.say("NickServ", "identify " + password)
+        if vhost:
+            bot.say("HostServ", "ON")
         # ensure handler is present exactly once by removing it before adding
         self.connection.remove_global_handler("ctcp", self.handle_ctcp)            
         self.connection.add_global_handler("ctcp", self.handle_ctcp)
