@@ -271,6 +271,7 @@ class MirrorBot(SingleServerIRCBot):
 
     def say(self, target, msg, do_say = True):
         """Send messages to channels/nicks"""
+        target = target.lower()
         try:
             lines = msg.encode("UTF-8").split("\n")
             cur = 0
@@ -312,7 +313,7 @@ class MirrorBot(SingleServerIRCBot):
         """React to channel messages"""
         args = event.arguments()
         source = event.source().split('!')[0]
-        target = event.target()
+        target = event.target().lower()
         cmds = args[0].split()
         if cmds[0].rstrip(":,") == nick:
             if len(cmds)==2:
@@ -336,7 +337,7 @@ class MirrorBot(SingleServerIRCBot):
         """Handle CTCP events for emoting"""
         args = event.arguments()
         source = event.source().split('!')[0]
-        target = event.target()
+        target = event.target().lower()
         if target in mirrors.keys():
             if source in mutedl[target]:
                 return
