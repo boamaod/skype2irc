@@ -5,7 +5,7 @@ FEATURES
 --------
 
 * Mirror messages from IRC channel to Skype chatroom and vice versa
-* Support regular messages and emotes (`/em`)
+* Support regular messages, emotes (`/em`) and Skype message edits
 * Only from IRC side
    * In chat, trigger mirroring transparently by adressing the bot with `ON` or `OFF`
    * Direct messages to bot
@@ -19,7 +19,7 @@ INSTALL
 
 On Ubuntu/Debian you need `python-irclib` and `python-skype` as well as Skype itself to run the script.
 
-For `python-skype` I used the version 1.0.31.0 provided at `ppa:skype-wrapper/ppa`. Although newer version is packaged even for Ubuntu 11.04, this package didn't work out of the box on Ubuntu 12.04.
+For `python-skype` I used the version 1.0.31.0 provided at `ppa:skype-wrapper/ppa`. Although newer version is packaged even for Ubuntu 11.04, this package didn't work out of the box on Ubuntu 12.04. Using latest source version from https://github.com/awahlig/skype4py works too.
 
 CONFIGURE
 ---------
@@ -39,4 +39,4 @@ To run the gateway, Skype must be running and you must be logged in. You can do 
 
 You can run `skype2irc.py` just from command line or use `ircbot.sh` to loop it. You can also run it from plain terminal providing the X desktop Skype will be started like `DISPLAY="host:0.0" ./skype2irc.py`.
 
-It could also make sense to run it using `ssh -X user@host` session or with something similar.
+It could also make sense to run it using `ssh -X user@host` session, virtual framebuffer or with something similar.

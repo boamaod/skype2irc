@@ -194,7 +194,6 @@ def OnNotify(n):
     """Skype notification listener"""
     params = n.split()
     if len(params) >= 4 and params[0] == "CHATMESSAGE":
-        print params, edmsgs
         if params[2] == "EDITED_TIMESTAMP":
             edmsgs[params[1]] = True
         elif params[1] in edmsgs and params[2] == "BODY":
