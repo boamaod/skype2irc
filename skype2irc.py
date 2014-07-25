@@ -340,7 +340,7 @@ class MirrorBot(SingleServerIRCBot):
         if target in mirrors.keys():
             if source in mutedl[target]:
                 return
-        if args[0]=='ACTION' and len(args) == 2:
+        if target in usemap and args[0]=='ACTION' and len(args) == 2:
             # An emote/action message has been sent to us
             msg = emote_char + " " + source + " " + decode_irc(args[1]) + "\n"
             print cut_title(usemap[target].FriendlyName), msg
