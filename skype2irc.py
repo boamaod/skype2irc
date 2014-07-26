@@ -270,6 +270,12 @@ class MirrorBot(SingleServerIRCBot):
                 self.server_list.append(self.server_list.pop(0))
         SingleServerIRCBot.start(self)
 
+    def on_nicknameinuse(self, connection, event):
+        """Overcome nick collisions"""
+        newnick = connection.get_nickname() + "_"
+        print "Nickname in use, adding underscore", newnick
+        connection.nick(newnick)
+
     def routine_ping(self, first_run = False):
         """Ping server to know when try to reconnect to a new server."""
         global pinger
