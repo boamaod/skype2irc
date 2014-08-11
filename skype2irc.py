@@ -163,7 +163,8 @@ def get_nick_color(s):
     return colors[num]
 
 def get_nick_decorated(nick):
-    """Decorate nicks for better visibility in IRC (currently bold)"""
+    """Decorate nicks for better visibility in IRC (currently bold or
+    colors based on nick)"""
     if colors:
         return get_nick_color(nick) + nick + '\017'
     else:
