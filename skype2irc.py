@@ -62,6 +62,8 @@ else:
     'iWwCuTwsjoIglPL3Fbmc_BM95EyK3683btIvrV_B2lQN4agJGCX7-REKzMl7-ruRqvo2RIgcOkQ',
     }
 
+    colors = True
+
 max_irc_msg_len = 442
 ping_interval = 2*60
 reconnect_interval = 30
@@ -151,9 +153,22 @@ def cut_title(title):
             break
     return newtitle.strip()
 
+def get_nick_color(s):
+    colors = ["\x0305", "\x0304", "\x0303", "\x0309", "\x0302", "\x0312",
+              "\x0306",   "\x0313", "\x0310", "\x0311", "\x0307"]
+    num = 0
+    for i in s:
+        num += ord(i)
+    num = num % 11
+    return colors[num]
+
 def get_nick_decorated(nick):
-    """Decorate nicks for better visibility in IRC (currently bold)"""
-    return "\x02" + nick + "\x02"
+    """Decorate nicks for better visibility in IRC (currently bold or
+    colors based on nick)"""
+    if colors:
+        return get_nick_color(nick) + nick + '\017'
+    else:
+        return "\x02" + nick + "\x02"
 
 def load_mutes():
     """Loads people who don't want to be broadcasted from IRC to Skype"""
