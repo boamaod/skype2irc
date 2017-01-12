@@ -12,7 +12,7 @@ FEATURES
       * Turn mirroring to Skype `ON` or `OFF` for the user, get user's present `STATUS`
       * Query for Skype users mirrored to IRC channel using `INFO #channel`
 
-Update: **After Skype dropped it's [support for creating P2P chats](https://github.com/boamaod/skype2irc/issues/7) and has stated that [P2P clients will not be supported in the future](https://yro.slashdot.org/story/16/07/20/1446223/skype-finalizes-its-move-to-the-cloud-to-kill-older-clients----remains-tight-lipped-about-privacy), I have decided to rely on Libpurple for bridging Skype chats on my Raspberry PI instance (the good side is that you can bridge anything that has a Libpurple plugin):**
+**After Skype dropped it's [support for creating P2P chats](https://github.com/boamaod/skype2irc/issues/7) and has stated that [P2P clients will not be supported in the future](https://yro.slashdot.org/story/16/07/20/1446223/skype-finalizes-its-move-to-the-cloud-to-kill-older-clients----remains-tight-lipped-about-privacy), I have decided to rely on Libpurple for bridging Skype chats on my Raspberry PI instance (the good side is that you can bridge anything that has a Libpurple plugin):**
 
 * https://github.com/boamaod/rainbow-bridge
 
